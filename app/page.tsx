@@ -76,6 +76,14 @@ function formatPhone(value: string) {
   return result;
 }
 
+function openPicker(input: HTMLInputElement) {
+  try {
+    input.showPicker?.();
+  } catch {
+    // Some browsers only allow showPicker during a direct user gesture.
+  }
+}
+
 export default function Home() {
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
@@ -319,6 +327,7 @@ export default function Home() {
               <input
                 className="pickerInput"
                 onChange={(event) => setBookingDate(event.target.value)}
+                onPointerDown={(event) => openPicker(event.currentTarget)}
                 type="date"
                 value={bookingDate}
               />
@@ -328,6 +337,7 @@ export default function Home() {
               <input
                 className="pickerInput"
                 onChange={(event) => setBookingTime(event.target.value)}
+                onPointerDown={(event) => openPicker(event.currentTarget)}
                 type="time"
                 value={bookingTime}
               />

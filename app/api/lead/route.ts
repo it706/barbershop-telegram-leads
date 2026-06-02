@@ -17,6 +17,36 @@ function escapeHtml(value: string) {
     .replace(/"/g, "&quot;");
 }
 
+async function sendLeadToCrm(payload: {
+  client: string;
+  phone: string;
+  service: string;
+  budget: number;
+  comment: string;
+}) {
+  const crmUrl = process.env.CRM_WEBHOOK_URL;
+
+  if (!crmUrl) return;
+
+  await fetch(crmUrl, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      ...(process.env.CRM_WEBHOOK_SECRET ? { "x-crm-secret": process.env.CRM_WEBHOOK_SECRET } : {}),
+    },
+    body: JSON.stringify({
+      ...payload,
+      project: "NordCut",
+    }),
+  }).catch(() => null);
+}
+
+function getServiceBudget(service: string) {
+  const price = service.match(/\d[\d\s]*/)?.[0]?.replace(/\D/g, "");
+
+  return price ? Number(price) : 0;
+}
+
 export async function POST(request: Request) {
   const payload = (await request.json()) as LeadPayload;
   const name = payload.name?.trim() ?? "";
@@ -71,6 +101,14 @@ export async function POST(request: Request) {
   if (!telegramResponse.ok) {
     return NextResponse.json({ message: "Telegram request failed" }, { status: 502 });
   }
+
+  await sendLeadToCrm({
+    client: name,
+    phone,
+    service,
+    budget: getServiceBudget(service),
+    comment: `Мастер: ${master}. Дата: ${bookingDate}. Время: ${bookingTime}.`,
+  });
 
   return NextResponse.json({ ok: true });
 }
